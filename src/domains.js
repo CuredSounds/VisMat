@@ -6,6 +6,20 @@
 // Helper: clamp a number to a range
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
+// Abramowitz & Stegun approximation to the error function (max error ~1.5e-7)
+export function erf(x) {
+  const sign = x < 0 ? -1 : 1;
+  const ax = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * ax);
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(ax * ax));
+  return sign * y;
+}
+
+// Standard normal CDF using erf
+function Phi(x) {
+  return 0.5 * (1 + erf(x / Math.SQRT2));
+}
+
 // ─── PHYSICS ────────────────────────────────────────────────────────────────
 const physicsScenarios = [
   {
@@ -336,6 +350,7 @@ const biologyScenarios = [
 ];
 
 // ─── STATISTICS ──────────────────────────────────────────────────────────────
+
 const statisticsScenarios = [
   {
     id: 'normal',
@@ -349,13 +364,8 @@ const statisticsScenarios = [
     ],
     outputs: [
       { label: 'P(x₁ < X < x₂)', formula: (v) => {
-          const erf = (x) => {
-            const t = 1 / (1 + 0.3275911 * Math.abs(x));
-            const r = 1 - (0.254829592 * t - 0.284496736 * t * t + 1.421413741 * t * t * t - 1.453152027 * t * t * t * t + 1.061405429 * t * t * t * t * t) * Math.exp(-(x * x));
-            return x >= 0 ? r : -r;
-          };
-          const Phi = (x) => 0.5 * (1 + erf((x - v.mu) / (v.sigma * Math.SQRT2)));
-          return (Phi(v.x2) - Phi(v.x1)) * 100;
+          const phiNorm = (x) => Phi((x - v.mu) / v.sigma);
+          return (phiNorm(v.x2) - phiNorm(v.x1)) * 100;
         }, unit: '%', description: 'Probability in shaded region' },
       { label: 'Skewness', formula: () => 0,                     unit: '',    description: 'Normal is symmetric' },
       { label: 'Kurtosis', formula: () => 3,                     unit: '',    description: 'Excess kurtosis = 0' },
@@ -501,18 +511,15 @@ const financeScenarios = [
       { label: 'Call Price', formula: (v) => {
           const d1 = (Math.log(v.S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
           const d2 = d1 - v.sig * Math.sqrt(v.T);
-          const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
           return v.S * Phi(d1) - v.K * Math.exp(-v.rf * v.T) * Phi(d2);
         }, unit: '$', description: 'European call option' },
       { label: 'Put Price', formula: (v) => {
           const d1 = (Math.log(v.S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
           const d2 = d1 - v.sig * Math.sqrt(v.T);
-          const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
           return v.K * Math.exp(-v.rf * v.T) * Phi(-d2) - v.S * Phi(-d1);
         }, unit: '$', description: 'European put option' },
       { label: 'Delta (Call)', formula: (v) => {
           const d1 = (Math.log(v.S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
-          const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
           return Phi(d1);
         }, unit: '', description: 'Δ = dC/dS' },
     ],
@@ -532,7 +539,6 @@ const financeScenarios = [
           const S = sMin + ((sMax - sMin) * i) / 150;
           const d1 = (Math.log(S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
           const d2 = d1 - v.sig * Math.sqrt(v.T);
-          const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
           const call = S * Phi(d1) - v.K * Math.exp(-v.rf * v.T) * Phi(d2);
           const put  = v.K * Math.exp(-v.rf * v.T) * Phi(-d2) - S * Phi(-d1);
           pts.push({ x: +S.toFixed(2), call: +Math.max(0, call).toFixed(3), put: +Math.max(0, put).toFixed(3) });
@@ -542,55 +548,6 @@ const financeScenarios = [
     },
   },
 ];
-
-// Helper: error function (used in Normal and Black-Scholes)
-function erf(x) {
-  const sign = x < 0 ? -1 : 1;
-  x = Math.abs(x);
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
-  const t = 1 / (1 + p * x);
-  const y = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-  return sign * y;
-}
-
-// Fix formulae that reference erf — patch the Black-Scholes formulas at load time
-financeScenarios[1].outputs[0].formula = (v) => {
-  const d1 = (Math.log(v.S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
-  const d2 = d1 - v.sig * Math.sqrt(v.T);
-  const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
-  return v.S * Phi(d1) - v.K * Math.exp(-v.rf * v.T) * Phi(d2);
-};
-financeScenarios[1].outputs[1].formula = (v) => {
-  const d1 = (Math.log(v.S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
-  const d2 = d1 - v.sig * Math.sqrt(v.T);
-  const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
-  return v.K * Math.exp(-v.rf * v.T) * Phi(-d2) - v.S * Phi(-d1);
-};
-financeScenarios[1].outputs[2].formula = (v) => {
-  const d1 = (Math.log(v.S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
-  const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
-  return Phi(d1);
-};
-financeScenarios[1].chart.generateData = (v) => {
-  const pts = [];
-  const sMin = Math.max(1, v.K * 0.3), sMax = v.K * 2;
-  for (let i = 0; i <= 150; i++) {
-    const S = sMin + ((sMax - sMin) * i) / 150;
-    const d1 = (Math.log(S / v.K) + (v.rf + 0.5 * v.sig ** 2) * v.T) / (v.sig * Math.sqrt(v.T));
-    const d2 = d1 - v.sig * Math.sqrt(v.T);
-    const Phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
-    const call = S * Phi(d1) - v.K * Math.exp(-v.rf * v.T) * Phi(d2);
-    const put  = v.K * Math.exp(-v.rf * v.T) * Phi(-d2) - S * Phi(-d1);
-    pts.push({ x: +S.toFixed(2), call: +Math.max(0, call).toFixed(3), put: +Math.max(0, put).toFixed(3) });
-  }
-  return pts;
-};
-
-// Fix normal distribution probability formula
-statisticsScenarios[0].outputs[0].formula = (v) => {
-  const Phi = (x) => 0.5 * (1 + erf((x - v.mu) / (v.sigma * Math.SQRT2)));
-  return (Phi(v.x2) - Phi(v.x1)) * 100;
-};
 
 // ─── DOMAINS EXPORT ──────────────────────────────────────────────────────────
 export const DOMAINS = [
@@ -637,5 +594,3 @@ export const DOMAINS = [
     scenarios: financeScenarios,
   },
 ];
-
-export { erf };

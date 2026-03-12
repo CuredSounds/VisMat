@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "katex": "^0.16.38",
     "mathjs": "^15.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
