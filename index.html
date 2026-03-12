@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisMat - STEM Visualizer</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="brand">
+                <div class="logo-icon"></div>
+                <h1>VisMat</h1>
+            </div>
+            <nav class="domain-nav" id="domain-nav">
+                <!-- Navigation buttons injected via JS -->
+            </nav>
+            <div class="sidebar-footer">
+                <p>v1.0.0</p>
+                <p>Designed with ❤️</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-bar">
+                <h2 id="current-domain-title">Select a Domain</h2>
+                <div class="formula-display glass-panel" id="formula-display">
+                    Formula loading...
+                </div>
+            </header>
+
+            <!-- Visualization Stage -->
+            <section class="stage glass-panel" id="stage-container">
+                <!-- Canvas elements injected here depending on type (native canvas or chart js) -->
+            </section>
+
+            <!-- Control Panel -->
+            <section class="controls glass-panel" id="controls-container">
+                <!-- Controls injected via JS -->
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
