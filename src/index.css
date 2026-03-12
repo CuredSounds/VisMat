@@ -1,0 +1,22 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0F172A;
+  --bg-card:   #1E293B;
+  --bg-hover:  #263044;
+  --border:    #334155;
+  --text:      #F1F5F9;
+  --text-muted:#94A3B8;
+  --accent:    #3B82F6;
+  font-size: 14px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+code { font-family: 'Fira Code', 'Consolas', monospace; }
